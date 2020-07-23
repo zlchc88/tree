@@ -1,0 +1,19 @@
+{
+    "name": "hcgrzh/tree",
+    "description": "arr",
+    "type": "library",
+    "require": {
+        "php": ">=7.2"
+    },
+    "authors": [
+        {
+            "name": "hcgrzh",
+            "email": "hc_179zy@163.com"
+        }
+    ],
+	"autoload": {
+		"psr-4": {
+			"hcgrzh\\tree\\": "src"
+		}
+	}
+}
