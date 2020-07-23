@@ -219,6 +219,7 @@ class Tree {
 	 * @param  integer $topid [description]
 	 * @param  array   $arr   [description]
 	 * @return [type]         [description]
+	 * @level	当前第几层次
 	 */
     public function getsortdatalevel($topid=0,&$arr=array(),$level=1){
         $child=$this->get_child_level($topid,$level);

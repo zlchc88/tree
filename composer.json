@@ -2,6 +2,7 @@
     "name": "hcgrzh/tree",
     "description": "arr",
     "type": "library",
+	"license": "MIT",
     "require": {
         "php": ">=7.2"
     },
