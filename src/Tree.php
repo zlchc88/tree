@@ -5,18 +5,21 @@ class Tree {
 	* 生成树型结构所需要的2维数组
 	* @var array
 	*/
-	public $arr = array();
+	public static $arr = [];
 
 	/**
 	* 生成树型结构所需修饰符号，可以换成图片
 	* @var array
 	*/
-	public $icon = array('│','├','└');
-	public $nbsp = "&nbsp;";
-	public $ret = '';
-	public $treedata='';
-	public $optiondata=array();/*下拉菜单其他数据<option $optionstr  value=''></option>*/
-	public $showname='';//额外显示的内容
+	public static $icon =['│','├','└'];
+	public static $nbsp = "&nbsp;";
+	public static $ret = '';
+	public static $treedata='';
+	public static $optiondata=[];/*下拉菜单其他数据<option $optionstr  value=''></option>*/
+	public static $showname='';//额外显示的内容
+	public static $name=null;
+	public static $id=null;
+	public static $pid=null;
 	/**
 	* 构造函数，初始化类
 	* @param array 2维数组，例如：
@@ -30,12 +33,12 @@ class Tree {
 	*      7 => array('id'=>'7','parentid'=>3,'name'=>'三级栏目二')
 	*      )
 	*/
-	public function  init($arr=array(),$pid="parentid",$id="id",$name='name'){
-		$this->arr = $arr;
-	   	$this->ret = '';
-	   	$this->pid=$pid;
-	   	$this->id=$id;
-	   	$this->name=$name;
+	public static function init($arr=[],$pid="parentid",$id="id",$name='name'):bool{
+		self::$arr = $arr;
+	   	self::$ret = '';
+	   	self::$pid=$pid;
+	   	self::$id=$id;
+	   	self::$name=$name;
 	   	return is_array($arr);
 	}
 	/**
@@ -44,50 +47,49 @@ class Tree {
 	 * @param  string $type   [description]
 	 * @return [type]         [description]
 	 */
-	public function setconfing($config,$type='option'){
+	public static function setconfing($config,$type='option'):void{
 		if($type=='option'){/*下拉菜单其他数据<option key  value=''></option>*/
-			$this->optiondata=$config;
+			self::$optiondata=$config;
 		}
 		if($type=='showname'){
-			$this->showname=$config;
+			self::$showname=$config;
 		}
-
 	}
 	/**
 	* 得到子级数组
 	* @param int
 	* @return array
+	* @level 方便其他调用层次使用
 	*/
-	public function get_child($topid=0){
-		$a = $newarr = array();
-		if(is_array($this->arr)){
-			foreach($this->arr as $id => $a){
-				if($a[$this->pid] == $topid) {
-				    $newarr[$id] = $a;
-                }
-			}
-		}
-		return $newarr ? $newarr : false;
-	}
-    public function get_child_level($topid=0,$level=1){
-        $a = $newarr = array();
-        if(is_array($this->arr)){
-            foreach($this->arr as $id => $a){
-                if($a[$this->pid] == $topid) {
+    public static function get_child_level($topid=0,$level=1):array{
+        $newarr = [];
+        if(is_array(self::$arr)){
+            foreach(self::$arr as $id => $a){
+                if($a[self::$pid] == $topid) {
                     $newarr[$id] = $a;
                     $newarr[$id]['level'] = $level;
                 }
             }
         }
-        return $newarr ? $newarr : false;
+        return $newarr ? $newarr : [];
     }
+  	public static function get_childall_data($topid=0,$child=[]):array{
+		foreach(self::$arr as $k => $v) {
+			if($v[self::$pid]==$topid){
+				$child_arr=self::get_childall_data($v[self::$id],[]);
+				$v['child']=$child_arr??[];
+				$child[]=$v;
+			}
+		}
+		return $child;
+  	}
 	//得到子级id 数组集合
-  	public function get_child_id($pid=0){
+  	public static function get_child_id($pid=0):array{
       	$child=array();
-      	if(is_array($this->arr)){
-	  	    foreach($this->arr as $k=>$v){
-	  	        if($v[$this->pid] == $pid){
-	  	            $child[]=$v[$this->id];
+      	if(is_array(self::$arr)){
+	  	    foreach(self::$arr as $k=>$v){
+	  	        if($v[self::$pid] == $pid){
+	  	            $child[]=$v[self::$id];
 	  	        }
 	  	    }
 	  	}
@@ -100,30 +102,78 @@ class Tree {
 	 * @param  array   $child [description]
 	 * @return [type]         [description]
 	 */
-  	public function get_child_all($pid=1,$child = array()){
+  	public static function get_child_all($pid=1,$child =[]):array{
       	$child[] = $pid;
-      	if(is_array($this->arr)){
-	  	    foreach($this->arr as $k=>$v){
-	  	        if($v[$this->pid] == $pid){
-	  	            $child = $this->get_child_all($v[$this->id],$child);
+      	if(is_array(self::$arr)){
+	  	    foreach(self::$arr as $k=>$v){
+	  	        if($v[self::$pid] == $pid){
+	  	            $child = self::get_child_all($v[self::$id],$child);
 	  	        }
 	  	    }
   		}
       	return $child;
   	}
   	/**
+	 * [getsortdataChild description]排序生成数组并获取下级栏目id 和下级所有栏目id
+	 * @param  integer $topid [description]
+	 * @param  array   $arr   [description]
+	 * @param  array   $sort  array('排序字段','desc|asc')
+	 * @return [type]         [description]
+	 * @level	当前第几层次
+	 */
+    public static function get_child_all_level($topid=0,$sort=[],&$arr=[],$level=1):array{
+        $child=self::get_child_level($topid,$level);
+        if(!empty($sort)){
+        	$child=self::data_sort($child,$sort[0],$sort[1]);
+        }
+        $level++;
+        if(is_array($child)){
+            foreach($child as $k=>$v){
+                $child_new=self::get_child_id($v[self::$id]);
+                $v['child']=implode('_',$child_new);
+                //获取下级所有子集的id
+                $child_all=self::get_child_all($v[self::$id]);
+                unset($child_all[0]);//删除当前id
+                $child_all=implode('_',$child_all);
+                $v['child_all']=$child_all;
+                //如果存在模型
+                $arr[]=$v;
+                self::get_child_all_level($v[self::$id],$sort,$arr,$level);
+            }
+        }
+        return $arr;
+    }
+    //数组排序.//排序比较时 要用数字；
+    public static function data_sort($array=[],$keys,$type='asc'):array{
+	   $keysvalue = $new_array = array();
+	   //提取排序的列
+	   foreach ($array as $k=>$v){
+	       $keysvalue[$k] = $v[$keys];
+	   }
+	   if($type == 'asc'){
+	       asort($keysvalue);//升序排列
+	   }else{
+	       arsort($keysvalue);//降序排列
+	   }
+	   //reset($keysvalue);
+	   foreach ($keysvalue as $k=>$v){
+	       $new_array[$k] = $array[$k];
+	   }
+	   return $new_array;
+	}
+  	/**
   	 * [get_parentid_all description]获取父级栏目id 集合
-  	 * @param  [type] $colid [description] 当前id
+  	 * @param  [type] $curid [description] 当前id
   	 * @param  array  &$p    [description]
   	 * @return [type]        [description]
   	 */
-  	public function get_parentid_all($colid,&$p=array()){
-  		if(is_array($this->arr)){
-  			foreach($this->arr as $k=>$v){
-  				if($colid==$v[$this->id]){
-  					if($v[$this->pid]!=0){
-  						$p[]=$v[$this->pid];
-  						$this->get_parentid_all($v[$this->pid],$p);
+  	public static function get_parentid_all($curid,&$p=[]):array{
+  		if(is_array(self::$arr)){
+  			foreach(self::$arr as $k=>$v){
+  				if($curid==$v[self::$id]){
+  					if($v[self::$pid]!=0){
+  						$p[]=$v[self::$pid];
+  						self::get_parentid_all($v[self::$pid],$p);
   					}
   				}
   			}
@@ -133,23 +183,23 @@ class Tree {
 	/*
 	$topid 顶部id;  当前选择项 ；不能选择项 ，间歇； $noselectedpid=array('parentid',array(0,1));及栏目id 不能选择父id值为0和1的栏目
 	 */
-	public function get_select($topid,$selectedid='',$noselectedpid=array(),$adds=''){
+	public static function get_select($topid=0,$selectedid='',$noselectedpid=[],$adds='',$level=1):string{
 		$number=1;
-		$child=$this->get_child($topid);
+		$child=self::get_child_level($topid);
+		$level++;
 		if(is_array($child)){
 			$total=count($child);
 			foreach ($child as $key => $value) {
 				$j=$k='';
 				if($number==$total){
-					$j.=$this->icon[2];//下级菜单只有最后一个
+					$j.=self::$icon[2];//下级菜单只有最后一个
 				}else{
-					$j.=$this->icon[1];//下级菜单有多个
-					$k = $adds ? $this->icon[0] : '';
+					$j.=self::$icon[1];//下级菜单有多个
+					$k = $adds ? self::$icon[0] : '';
 				}
-
 				$spacer = $adds ? $adds.$j : '';
 				//默认选择项
-				$selected=$selectedid==$value[$this->id]?'selected':'';
+				$selected=$selectedid==$value[self::$id]?'selected':'';
 				//不能选择项
 				$noselected='';
 				if(!empty($noselectedpid)){
@@ -160,86 +210,23 @@ class Tree {
 					}
 				}
 				$stroption='';
-				if(isset($this->optiondata)){
-					foreach($this->optiondata as $x=>$y){
+				if(isset(self::$optiondata)){
+					foreach(self::$optiondata as $x=>$y){
 						$stroption.=$x."=".$value[$y]." ";
 					}
 				}
 				$showname='';
-				if(isset($this->showname) && $this->showname!=''){
-					$showname="(".$value[$this->showname].")";		
+				if(isset(self::$showname) && self::$showname!=''){
+					$showname="(".$value[self::$showname].")";
 				}
-				$this->ret.="<option ".$stroption." ".$noselected." ".$selected."  value='".$value[$this->id]."'>".$spacer.$value[$this->name].$showname."</option>";
+				self::$ret.="<option ".$stroption." ".$noselected." ".$selected."  value='".$value[self::$id]."'>".$spacer.$value[self::$name].$showname."</option>";
 
-				$nbsp = $this->nbsp;
-				$this->get_select($value[$this->id], $selectedid, $noselectedpid, $adds.$k.$nbsp);
+				$nbsp = self::$nbsp;
+				self::get_select($value[self::$id], $selectedid, $noselectedpid, $adds.$k.$nbsp,$level);
 				$number++;
 			}
 		}
-		return $this->ret;
+		return self::$ret;
 	}
-	public function get_treedata($topid,$adds='',&$arrnew=array()){
-		$number=1;
-		$child=$this->get_child($topid);
-		if(is_array($child)){
-			$total=count($child);
-			foreach ($child as $key => $value) {
-				$j=$k='';
-				if($number==$total){
-					$j.=$this->icon[2];//下级菜单只有最后一个
-				}else{
-					$j.=$this->icon[1];//下级菜单有多个
-					$k = $adds ? $this->icon[0] : '';
-				}
-
-				$spacer = $adds ? $adds.$j : '';
-				$value['showname']=$spacer.$value[$this->name];
-				$value['level_level']=$number;
-				$arrnew[]=$value;
-				$nbsp = $this->nbsp;
-				$this->get_treedata($value[$this->id], $adds.$k.$nbsp,$arrnew);
-				$number++;
-			}
-		}
-		return $arrnew;
-	}
-	//排序生成数组
-	public function getsortdata($topid=0,&$arr=array()){
-		$child=$this->get_child($topid);
-		if(is_array($child)){
-			foreach($child as $k=>$v){
-				$arr[]=$v;
-				$this->getsortdata($v[$this->id],$arr);
-			}
-		}
-		return $arr;
-	}
-	/**
-	 * [getsortdataChild description]排序生成数组并获取下级栏目id 和下级所有栏目id
-	 * @param  integer $topid [description]
-	 * @param  array   $arr   [description]
-	 * @return [type]         [description]
-	 * @level	当前第几层次
-	 */
-    public function getsortdatalevel($topid=0,&$arr=array(),$level=1){
-        $child=$this->get_child_level($topid,$level);
-        $level++;
-        if(is_array($child)){
-            foreach($child as $k=>$v){
-                $child_new=$this->get_child_id($v[$this->id]);
-
-                $v['child']=implode('_',$child_new);
-                //获取下级所有子集的id
-                $child_all=$this->get_child_all($v[$this->id]);
-                unset($child_all[0]);//删除当前id
-                $child_all=implode('_',$child_all);
-                $v['child_all']=$child_all;
-                //如果存在模型
-                $arr[]=$v;
-                $this->getsortdatalevel($v[$this->id],$arr,$level);
-            }
-        }
-        return $arr;
-    }
 }
 ?>
