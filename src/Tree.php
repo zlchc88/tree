@@ -73,13 +73,25 @@ class Tree {
         }
         return $newarr ? $newarr : [];
     }
-  	public static function get_childall_data($topid=0,$child=[]):array{
+    /**
+	 * @param  integer $topid [description]
+	 * @param  array   $sort  array('排序字段','desc|asc')
+	 */
+  	public static function get_childall_data($topid=0,$sort=[],$child=[]):array{
 		foreach(self::$arr as $k => $v) {
 			if($v[self::$pid]==$topid){
 				$child_arr=self::get_childall_data($v[self::$id],[]);
 				$v['child']=$child_arr??[];
+				if(!empty($sort) && !empty($v['child'])){
+					$v['child']=self::data_sort($v['child'],$sort[0],$sort[1]);
+					$v['child']=array_values($v['child']);
+				}
 				$child[]=$v;
 			}
+		}
+		if(!empty($sort)){
+			$child=self::data_sort($child,$sort[0],$sort[1]);
+			$child=array_values($child);
 		}
 		return $child;
   	}
@@ -125,6 +137,7 @@ class Tree {
         $child=self::get_child_level($topid,$level);
         if(!empty($sort)){
         	$child=self::data_sort($child,$sort[0],$sort[1]);
+        	$child=array_values($child);
         }
         $level++;
         if(is_array($child)){
