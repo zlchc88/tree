@@ -20,6 +20,9 @@ class Tree {
 	public static $name=null;
 	public static $id=null;
 	public static $pid=null;
+	public static $isGetNextId=false;//如方法get_childall_data|get_child_all_level是否获取下一级所有id
+	public static $isGetNextIdAll=false;//如方法get_childall_data|get_child_all_level是否获取所有下级id
+	public static $isGetNextIdAllCurrentId=false;//获取所有下级id 返回是否包含当前id值
 	/**
 	* 构造函数，初始化类
 	* @param array 2维数组，例如：
@@ -79,6 +82,21 @@ class Tree {
 	 */
   	public static function get_childall_data($topid=0,$sort=[],$child=[]):array{
 		foreach(self::$arr as $k => $v) {
+			//获取当前下级id
+			if(self::$isGetNextId===true){
+				$child_id=self::get_child_id($v[self::$id]);
+				$v['child_id']=implode('_',$child_id);
+			}
+			//获取下级所有子集的id
+			if(self::$isGetNextIdAll===true){
+				$child_idall=self::get_child_all($v[self::$id]);
+				if(self::$isGetNextIdAllCurrentId===false){
+					unset($child_idall[0]);//删除当前id
+				}
+				$child_idall=implode('_',$child_idall);
+				$v['child_idall']=$child_idall;
+			}
+			//获取下级内容处理
 			if($v[self::$pid]==$topid){
 				$child_arr=self::get_childall_data($v[self::$id],[]);
 				$v['child']=$child_arr??[];
@@ -142,13 +160,20 @@ class Tree {
         $level++;
         if(is_array($child)){
             foreach($child as $k=>$v){
-                $child_new=self::get_child_id($v[self::$id]);
-                $v['child']=implode('_',$child_new);
-                //获取下级所有子集的id
-                $child_all=self::get_child_all($v[self::$id]);
-                unset($child_all[0]);//删除当前id
-                $child_all=implode('_',$child_all);
-                $v['child_all']=$child_all;
+				//获取当前下级id
+				if(self::$isGetNextId===true){
+					$child_id=self::get_child_id($v[self::$id]);
+					$v['child_id']=implode('_',$child_id);
+				}
+				//获取下级所有子集的id
+				if(self::$isGetNextIdAll===true){
+					$child_idall=self::get_child_all($v[self::$id]);
+					if(self::$isGetNextIdAllCurrentId===false){
+						unset($child_idall[0]);//删除当前id
+					}
+					$child_idall=implode('_',$child_idall);
+					$v['child_idall']=$child_idall;
+				}
                 //如果存在模型
                 $arr[]=$v;
                 self::get_child_all_level($v[self::$id],$sort,$arr,$level);
