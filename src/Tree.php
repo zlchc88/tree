@@ -23,6 +23,7 @@ class Tree {
 	public static $isGetNextId=false;//如方法get_childall_data|get_child_all_level是否获取下一级所有id
 	public static $isGetNextIdAll=false;//如方法get_childall_data|get_child_all_level是否获取所有下级id
 	public static $isGetNextIdAllCurrentId=false;//获取所有下级id 返回是否包含当前id值
+	public static $isGetUpperIdAll=false;//获取上级所有id 如方法get_childall_data|get_child_all_level
 	/**
 	* 构造函数，初始化类
 	* @param array 2维数组，例如：
@@ -95,6 +96,10 @@ class Tree {
 				}
 				$child_idall=implode('_',$child_idall);
 				$v['child_idall']=$child_idall;
+			}
+			//获取所有上级id
+			if(self::$isGetUpperIdAll===true){
+				$v['supper_idll']=self::get_parentid_all($v[self::$id]);
 			}
 			//获取下级内容处理
 			if($v[self::$pid]==$topid){
@@ -173,6 +178,10 @@ class Tree {
 					}
 					$child_idall=implode('_',$child_idall);
 					$v['child_idall']=$child_idall;
+				}
+				//获取所有上级id
+				if(self::$isGetUpperIdAll===true){
+					$v['supper_idll']=self::get_parentid_all($v[self::$id]);
 				}
                 //如果存在模型
                 $arr[]=$v;
