@@ -99,7 +99,8 @@ class Tree {
 			}
 			//获取所有上级id
 			if(self::$isGetUpperIdAll===true){
-				$v['supper_idll']=self::get_parentid_all($v[self::$id]);
+				//$v['supper_idll']=self::get_parentid_all($v[self::$id]);
+				$v['supper_idll']=implode('_',self::get_parentid_all($v[self::$id]));
 			}
 			//获取下级内容处理
 			if($v[self::$pid]==$topid){
@@ -181,7 +182,8 @@ class Tree {
 				}
 				//获取所有上级id
 				if(self::$isGetUpperIdAll===true){
-					$v['supper_idll']=self::get_parentid_all($v[self::$id]);
+					//$v['supper_idll']=self::get_parentid_all($v[self::$id]);
+					$v['supper_idll']=implode('_',self::get_parentid_all($v[self::$id]));
 				}
                 //如果存在模型
                 $arr[]=$v;
